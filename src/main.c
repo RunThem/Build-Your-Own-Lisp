@@ -77,6 +77,11 @@ int64_t eval(mpc_ast_t* t) {
   /* We store the third child in `x`. */
   int64_t x = eval(t->children[2]);
 
+  /* Unary operator */
+  if (t->children_num == 4) {
+    return -x;
+  }
+
   for (int i = 3; strstr(t->children[i]->tag, "expr"); i++) {
     x = eval_op(x, op, eval(t->children[i]));
   }
