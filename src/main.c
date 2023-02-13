@@ -48,6 +48,9 @@ int64_t eval_op(int64_t x, char* op, int64_t y) {
   if (strcmp(op, "/") == 0) {
     return x / y;
   }
+  if (strcmp(op, "%") == 0) {
+    return x % y;
+  }
 
   return 0;
 }
