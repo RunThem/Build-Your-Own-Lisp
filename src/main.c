@@ -7,42 +7,37 @@
 #include <mpc.h>
 /* clang-format on */
 
-#define LISP_PROMPT "=> "
+#define LISP_PROMPT "> "
 
-void test_mpc() {
-  mpc_parser_t* Adjective = mpc_new("adjective");
-  mpc_parser_t* Noun      = mpc_new("noun");
-  mpc_parser_t* Phrase    = mpc_new("phrase");
-  mpc_parser_t* Doge      = mpc_new("doge");
+mpc_parser_t *Number, *Operator, *Expr, *Lispy;
 
-  // 彩蛋
-  //
-  // number: <integer> '.' <float>;
-  // integer: [0-9][1-9]*;
-  // float: [1-9];
-  //
-  // url: <scheme> "://" <realm_name> <path>
-  // scheme: "https" | "http"
-  // realm_name: <word> '.' <word> ['.' <word>]*
-  // path: '/' | '/' <word> ['/' <word>]*
-  // word: [a-zA-Z]+
-  //
-  // not parse JSON
+void parser() {
+  /* Create Some Parsers */
+  Number   = mpc_new("number");
+  Operator = mpc_new("operator");
+  Expr     = mpc_new("expr");
+  Lispy    = mpc_new("lispy");
+
+  /* Define them with the following Language */
   mpca_lang(MPCA_LANG_DEFAULT,
-            "adjective: \"wow\" | \"many\" | \"so\" | \"such\";"
-            "noun: \"lisp\" | \"language\" | \"book\" | \"build\" | \"c\";"
-            "phrase: <adjective> <noun>;"
-            "doge: <phrase>*;",
-            Adjective,
-            Noun,
-            Phrase,
-            Doge);
+            "number: /-?[0-9]+([.][0-9]+)?/ ;"
+            "operator: '+' | '-' | '*' | '/' | '%' ;"
+            "expr: <number> | '(' <operator> <expr>+ ')' ;"
+            "lispy: /^/ <operator> <expr>+ /$/ ;",
+            Number,
+            Operator,
+            Expr,
+            Lispy);
+}
 
-  mpc_cleanup(4, Adjective, Noun, Phrase, Doge);
+void clean() {
+  mpc_cleanup(4, Number, Operator, Expr, Lispy);
 }
 
 int main(int argc, char** argv) {
   printf("lisp!\n");
+
+  parser();
 
   while (true) {
     const char* input = linenoise(LISP_PROMPT);
@@ -57,10 +52,20 @@ int main(int argc, char** argv) {
 
     linenoiseHistoryAdd(input);
 
-    printf("%*c\'%s\'\n", (int)strlen(LISP_PROMPT), ' ', input);
+    // printf("%*c\'%s\'\n", (int)strlen(LISP_PROMPT), ' ', input);
+    mpc_result_t result;
+    if (mpc_parse("<stdin>", input, Lispy, &result)) {
+      mpc_ast_print(result.output);
+      mpc_ast_delete(result.output);
+    } else {
+      mpc_err_print(result.error);
+      mpc_err_delete(result.error);
+    }
 
     free((void*)input);
   }
+
+  clean();
 
   return 0;
 }
