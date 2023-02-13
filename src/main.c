@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,7 +23,7 @@ void parser() {
   /* Define them with the following Language */
   mpca_lang(MPCA_LANG_DEFAULT,
             "number: /-?[0-9]+([.][0-9]+)?/ ;"
-            "operator: '+' | '-' | '*' | '/' | '%' ;"
+            "operator: '+' | '-' | '*' | '/' | '%' | '^' ;"
             "expr: <number> | '(' <operator> <expr>+ ')' ;"
             "lispy: /^/ <operator> <expr>+ /$/ ;",
             Number,
@@ -50,6 +51,9 @@ int64_t eval_op(int64_t x, char* op, int64_t y) {
   }
   if (strcmp(op, "%") == 0) {
     return x % y;
+  }
+  if (strcmp(op, "^") == 0) {
+    return pow(x, y);
   }
 
   return 0;
