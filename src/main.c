@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,6 +35,68 @@ void clean() {
   mpc_cleanup(4, Number, Operator, Expr, Lispy);
 }
 
+int64_t eval_op(int64_t x, char* op, int64_t y) {
+  if (strcmp(op, "+") == 0) {
+    return x + y;
+  }
+  if (strcmp(op, "-") == 0) {
+    return x - y;
+  }
+  if (strcmp(op, "*") == 0) {
+    return x * y;
+  }
+  if (strcmp(op, "/") == 0) {
+    return x / y;
+  }
+
+  return 0;
+}
+
+int64_t eval(mpc_ast_t* t) {
+  /* If tagged as number retruen it directly. */
+  if (strstr(t->tag, "number")) {
+    return atol(t->contents);
+  }
+
+  /* The operator is always second child. */
+  char* op = t->children[1]->contents;
+
+  /* We store the third child in `x`. */
+  int64_t x = eval(t->children[2]);
+
+  for (int i = 3; strstr(t->children[i]->tag, "expr"); i++) {
+    x = eval_op(x, op, eval(t->children[i]));
+  }
+
+  return x;
+}
+
+int number_of_nodes(mpc_ast_t* t) {
+  if (t->children_num == 0) {
+    return 1;
+  }
+
+  int total = 1;
+  for (int i = 0; i < t->children_num; i++) {
+    total += number_of_nodes(t->children[i]);
+  }
+
+  return total;
+}
+
+int number_of_leaf_nodes(mpc_ast_t* t) {
+  if (t->children_num == 0) {
+    return 1;
+  }
+
+  int total = 0;
+  for (int i = 0; i < t->children_num; i++) {
+    total += number_of_leaf_nodes(t->children[i]);
+  }
+
+  return total;
+}
+
 int main(int argc, char** argv) {
   printf("lisp!\n");
 
@@ -55,7 +118,8 @@ int main(int argc, char** argv) {
     // printf("%*c\'%s\'\n", (int)strlen(LISP_PROMPT), ' ', input);
     mpc_result_t result;
     if (mpc_parse("<stdin>", input, Lispy, &result)) {
-      mpc_ast_print(result.output);
+      int64_t n = eval(result.output);
+      printf("%li\n", n);
       mpc_ast_delete(result.output);
     } else {
       mpc_err_print(result.error);
