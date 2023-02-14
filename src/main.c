@@ -29,7 +29,7 @@ void parser() {
   mpca_lang(
       MPCA_LANG_DEFAULT,
       "number: /-?[0-9]+([.][0-9]+)?/ ;                                                            "
-      "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" | \"list\" | \"head\" |       "
+      "symbol: /[a-zA-Z0-9_+\\-*\\/%^\\\\=<>!&]+/ | \"min\" | \"max\" | \"list\" | \"head\" |      "
       "        \"tail\" | \"join\" | \"eval\" | \"cons\" | \"len\" | \"init\";                     "
       "sexpr: '(' <expr>* ')' ;                                                                    "
       "qexpr: '{' <expr>* '}' ;                                                                    "
