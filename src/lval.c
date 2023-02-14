@@ -189,6 +189,78 @@ void lval_println(lval* v) {
   printf("\n");
 }
 
+#define lassert(args, cond, err)                                                                   \
+  do {                                                                                             \
+    if (!(cond)) {                                                                                 \
+      lval_del(args);                                                                              \
+      return lval_err(err);                                                                        \
+    }                                                                                              \
+  } while (0);
+
+lval* builtin_head(lval* a) {
+  lassert(a, a->count == 1, "function 'head' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "function 'head' passed incorrect types!");
+  lassert(a, a->cell[0]->count != 0, "function 'head' passed {}!");
+
+  lval* v = lval_take(a, 0);
+  while (v->count > 1) {
+    lval_del(lval_pop(v, 1));
+  }
+
+  return v;
+}
+
+lval* builtin_tail(lval* a) {
+  lassert(a, a->count == 1, "function 'tail' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "function 'tail' passed incorrect types!");
+  lassert(a, a->cell[0]->count != 0, "function 'tail' passed {}!");
+
+  lval* v = lval_take(a, 0);
+  lval_del(lval_pop(v, 0));
+
+  return v;
+}
+
+lval* builtin_list(lval* a) {
+  a->type = LVAL_QEXPR;
+
+  return a;
+}
+
+lval* builtin_eval(lval* a) {
+  lassert(a, a->count == 1, "function 'eval' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "fcuntion 'eval' passed incorrect type!");
+
+  lval* x = lval_take(a, 0);
+  x->type = LVAL_SEXPR;
+
+  return lval_eval(x);
+}
+
+lval* lval_join(lval* x, lval* y) {
+  while (y->count) {
+    x = lval_add(x, lval_pop(y, 0));
+  }
+
+  lval_del(y);
+  return x;
+}
+
+lval* builtin_join(lval* a) {
+  for (int i = 0; i < a->count; i++) {
+    lassert(a, a->cell[i]->type == LVAL_QEXPR, "function 'join' passed incorrect type.");
+  }
+
+  lval* x = lval_pop(a, 0);
+
+  while (a->count) {
+    x = lval_join(x, lval_pop(a, 0));
+  }
+
+  lval_del(a);
+  return x;
+}
+
 lval* builtin_op(lval* a, char* op) {
   for (int i = 0; i < a->count; i++) {
     if (a->cell[i]->type != LVAL_INTEGER && a->cell[i]->type != LVAL_DECIMAL) {
@@ -288,6 +360,26 @@ lval* builtin_op(lval* a, char* op) {
   return x;
 }
 
+lval* builtin(lval* a, char* func) {
+  if (strcmp(func, "list") == 0) {
+    return builtin_list(a);
+  } else if (strcmp(func, "head") == 0) {
+    return builtin_head(a);
+  } else if (strcmp(func, "tail") == 0) {
+    return builtin_tail(a);
+  } else if (strcmp(func, "join") == 0) {
+    return builtin_join(a);
+  } else if (strcmp(func, "eval") == 0) {
+    return builtin_eval(a);
+  } else {
+    return builtin_op(a, func);
+  }
+
+  lval_del(a);
+
+  return lval_err("unknown function!");
+}
+
 lval* lval_evel_sexpr(lval* v) {
   /* Evaluate Children */
   for (int i = 0; i < v->count; i++) {
@@ -319,7 +411,7 @@ lval* lval_evel_sexpr(lval* v) {
     return lval_err("S-expression does not start with symbol!");
   }
 
-  lval* result = builtin_op(v, f->sym);
+  lval* result = builtin(v, f->sym);
   lval_del(f);
   return result;
 }

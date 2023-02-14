@@ -67,8 +67,10 @@ int main(int argc, char** argv) {
     // printf("%*c\'%s\'\n", (int)strlen(LISP_PROMPT), ' ', input);
     mpc_result_t result;
     if (mpc_parse("<stdin>", input, Lispy, &result)) {
+      mpc_ast_print(result.output);
       lval* x = lval_read(result.output);
-      x       = lval_eval(x);
+      lval_println(x);
+      x = lval_eval(x);
       lval_println(x);
       lval_del(x);
     } else {
