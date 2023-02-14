@@ -278,6 +278,17 @@ lval* builtin_cons(lval* a) {
   return builtin_join(a);
 }
 
+lval* builtin_len(lval* a) {
+  lassert(a, a->count == 1, "function 'cons' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "fcuntion 'cons' passed incorrect type!");
+
+  lval* x = lval_integer(a->cell[0]->count);
+
+  lval_del(a);
+
+  return x;
+}
+
 lval* builtin_op(lval* a, char* op) {
   for (int i = 0; i < a->count; i++) {
     if (a->cell[i]->type != LVAL_INTEGER && a->cell[i]->type != LVAL_DECIMAL) {
@@ -390,6 +401,8 @@ lval* builtin(lval* a, char* func) {
     return builtin_eval(a);
   } else if (strcmp(func, "cons") == 0) {
     return builtin_cons(a);
+  } else if (strcmp(func, "len") == 0) {
+    return builtin_len(a);
   } else {
     return builtin_op(a, func);
   }

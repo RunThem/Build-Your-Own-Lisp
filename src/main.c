@@ -28,12 +28,13 @@ void parser() {
   /* Define them with the following Language */
   mpca_lang(
       MPCA_LANG_DEFAULT,
-      "number: /-?[0-9]+([.][0-9]+)?/ ;"
-      "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | \"cons\" ;"
-      "sexpr: '(' <expr>* ')' ;"
-      "qexpr: '{' <expr>* '}' ;"
-      "expr: <number> | <symbol> | <sexpr> | <qexpr> ;"
-      "lispy: /^/ <expr>* /$/ ;",
+      "number: /-?[0-9]+([.][0-9]+)?/ ;                                                            "
+      "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" | \"list\" | \"head\" |       "
+      "        \"tail\" | \"join\" | \"eval\" | \"cons\" | \"len\" ;                               "
+      "sexpr: '(' <expr>* ')' ;                                                                    "
+      "qexpr: '{' <expr>* '}' ;                                                                    "
+      "expr: <number> | <symbol> | <sexpr> | <qexpr> ;                                             "
+      "lispy: /^/ <expr>* /$/ ;                                                                    ",
       Number,
       Symbol,
       Sexpr,
