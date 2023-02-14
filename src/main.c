@@ -14,13 +14,14 @@
 
 #define LISP_PROMPT "> "
 
-mpc_parser_t *Number, *Symbol, *Sexpr, *Expr, *Lispy;
+mpc_parser_t *Number, *Symbol, *Sexpr, *Qexpr, *Expr, *Lispy;
 
 void parser() {
   /* Create Some Parsers */
   Number = mpc_new("number");
   Symbol = mpc_new("symbol");
   Sexpr  = mpc_new("sexpr");
+  Qexpr  = mpc_new("qexpr");
   Expr   = mpc_new("expr");
   Lispy  = mpc_new("lispy");
 
@@ -29,17 +30,19 @@ void parser() {
             "number: /-?[0-9]+([.][0-9]+)?/ ;"
             "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;"
             "sexpr: '(' <expr>* ')' ;"
-            "expr: <number> | <symbol> | <sexpr> ;"
+            "qexpr: '{' <expr>* '}' ;"
+            "expr: <number> | <symbol> | <sexpr> | <qexpr> ;"
             "lispy: /^/ <expr>* /$/ ;",
             Number,
             Symbol,
             Sexpr,
+            Qexpr,
             Expr,
             Lispy);
 }
 
 void clean() {
-  mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lispy);
+  mpc_cleanup(6, Number, Symbol, Sexpr, Qexpr, Expr, Lispy);
 }
 
 int main(int argc, char** argv) {
