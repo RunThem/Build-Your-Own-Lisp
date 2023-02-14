@@ -130,6 +130,9 @@ void lval_print(lval* v) {
     case LVAL_INTEGER:
       printf("%li", v->integer);
       break;
+    case LVAL_DECIMAL:
+      printf("%f", v->decimal);
+      break;
     case LVAL_ERR:
       printf("Error: %s", v->err);
       break;
@@ -157,66 +160,165 @@ void lval_println(lval* v) {
   printf("\n");
 }
 
-lval* eval_op(lval* x, char* op, lval* y) {
-  if (x->type == LVAL_ERR) {
-    return x;
+lval* builtin_op(lval* a, char* op) {
+  for (int i = 0; i < a->count; i++) {
+    if (a->cell[i]->type != LVAL_INTEGER && a->cell[i]->type != LVAL_DECIMAL) {
+      lval_del(a);
+      return lval_err("cannot operate on non-number!");
+    }
   }
 
-  if (y->type == LVAL_ERR) {
-    return y;
+  lval* x = lval_pop(a, 0);
+
+  if ((strcmp(op, "-") == 0) && a->count == 0) {
+    x->integer = -x->integer;
   }
 
-  if (x->type == LVAL_DECIMAL || y->type == LVAL_DECIMAL) {
+  while (a->count > 0) {
+    lval* y = lval_pop(a, 0);
+
+#define is_integer(x, y) ((x)->type == LVAL_INTEGER && (y)->type == LVAL_INTEGER)
+#define num_of(x)        ((x)->type == LVAL_INTEGER ? (x)->integer : (x)->decimal)
+
     if (strcmp(op, "+") == 0) {
-      return lval_decimal(x->decimal + y->decimal);
+      if (is_integer(x, y)) {
+        x->integer += y->integer;
+      } else {
+        x->decimal = num_of(x) + num_of(y);
+        x->type    = LVAL_DECIMAL;
+      }
+    } else if (strcmp(op, "-") == 0) {
+      if (is_integer(x, y)) {
+        x->integer -= y->integer;
+      } else {
+        x->decimal = num_of(x) - num_of(y);
+        x->type    = LVAL_DECIMAL;
+      }
+    } else if (strcmp(op, "*") == 0) {
+      if (is_integer(x, y)) {
+        x->integer *= y->integer;
+      } else {
+        x->decimal = num_of(x) * num_of(y);
+        x->type    = LVAL_DECIMAL;
+      }
+    } else if (strcmp(op, "/") == 0) {
+      if (num_of(y) == 0.0) {
+        lval_del(x);
+        lval_del(y);
+        x = lval_err("division by zero!");
+        break;
+      } else {
+        x->decimal = num_of(x) / num_of(y);
+        x->type    = LVAL_DECIMAL;
+      }
+    } else if (strcmp(op, "%") == 0) {
+      if (is_integer(x, y)) {
+        if (y->integer == 0) {
+          lval_del(x);
+          lval_del(y);
+          x = lval_err("division by zero!");
+          break;
+        } else {
+          x->integer %= y->integer;
+        }
+      } else {
+        x = lval_err("cannot operate on non-number!");
+      }
+    } else if (strcmp(op, "^") == 0) {
+      if (is_integer(x, y)) {
+        x->integer = (int64_t)pow(x->integer, y->integer);
+      } else {
+        x->decimal = pow(num_of(x), num_of(y));
+        x->type    = LVAL_DECIMAL;
+      }
+    } else if (strcmp(op, "min") == 0) {
+      if (num_of(x) > num_of(y)) {
+        if (y->type == LVAL_INTEGER) {
+          x->integer = y->integer;
+        } else {
+          x->decimal = y->decimal;
+        }
+        x->type = y->type;
+      }
+    } else if (strcmp(op, "max") == 0) {
+      if (num_of(x) < num_of(y)) {
+        if (y->type == LVAL_INTEGER) {
+          x->integer = y->integer;
+        } else {
+          x->decimal = y->decimal;
+        }
+        x->type = y->type;
+      }
     }
-    if (strcmp(op, "-") == 0) {
-      return lval_decimal(x->decimal - y->decimal);
-    }
-    if (strcmp(op, "*") == 0) {
-      return lval_decimal(x->decimal * y->decimal);
-    }
-    if (strcmp(op, "/") == 0) {
-      return (y->decimal == 0) ? lval_err("division by zero!") :
-                                 lval_decimal(x->decimal / y->decimal);
-    }
-    if (strcmp(op, "^") == 0) {
-      return lval_decimal(pow(x->decimal, y->decimal));
-    }
-    if (strcmp(op, "min") == 0) {
-      return x->decimal < y->decimal ? x : y;
-    }
-    if (strcmp(op, "max") == 0) {
-      return x->decimal > y->decimal ? x : y;
-    }
-  } else {
-    if (strcmp(op, "+") == 0) {
-      return lval_integer(x->integer + y->integer);
-    }
-    if (strcmp(op, "-") == 0) {
-      return lval_integer(x->integer - y->integer);
-    }
-    if (strcmp(op, "*") == 0) {
-      return lval_integer(x->integer * y->integer);
-    }
-    if (strcmp(op, "/") == 0) {
-      return (y->integer == 0) ? lval_err("division by zero!") :
-                                 lval_integer(x->integer / y->integer);
-    }
-    if (strcmp(op, "%") == 0) {
-      return (y->integer == 0) ? lval_err("division by zero!") :
-                                 lval_integer(x->integer % y->integer);
-    }
-    if (strcmp(op, "^") == 0) {
-      return lval_integer((int64_t)pow(x->integer, y->integer));
-    }
-    if (strcmp(op, "min") == 0) {
-      return x->integer < y->integer ? x : y;
-    }
-    if (strcmp(op, "max") == 0) {
-      return x->integer > y->integer ? x : y;
+
+    lval_del(y);
+  }
+
+  lval_del(a);
+
+  return x;
+}
+
+lval* lval_evel_sexpr(lval* v) {
+  /* Evaluate Children */
+  for (int i = 0; i < v->count; i++) {
+    v->cell[i] = lval_eval(v->cell[i]);
+  }
+
+  /* Error checking */
+  for (int i = 0; i < v->count; i++) {
+    if (v->cell[i]->type == LVAL_ERR) {
+      return lval_take(v, i);
     }
   }
 
-  return lval_err("invalid operator!");
+  /* Empty expression */
+  if (v->count == 0) {
+    return v;
+  }
+
+  /* Single expression */
+  if (v->count == 1) {
+    return lval_take(v, 0);
+  }
+
+  /* Ensure first element is symbol */
+  lval* f = lval_pop(v, 0);
+  if (f->type != LVAL_SYM) {
+    lval_del(f);
+    lval_del(v);
+    return lval_err("S-expression does not start with symbol!");
+  }
+
+  lval* result = builtin_op(v, f->sym);
+  lval_del(f);
+  return result;
+}
+
+lval* lval_pop(lval* v, int i) {
+  lval* x = v->cell[i];
+
+  memmove(&v->cell[i], &v->cell[i + 1], sizeof(lval*) * (v->count - i - 1));
+  v->count--;
+
+  v->cell = realloc(v->cell, sizeof(lval*) * v->count);
+
+  return x;
+}
+
+lval* lval_take(lval* v, int i) {
+  lval* x = lval_pop(v, i);
+  lval_del(v);
+
+  return x;
+}
+
+lval* lval_eval(lval* v) {
+  /* Evaluate Sexpressions */
+  if (v->type == LVAL_SEXPR) {
+    return lval_evel_sexpr(v);
+  }
+
+  /* All other lval types remain the same */
+  return v;
 }
