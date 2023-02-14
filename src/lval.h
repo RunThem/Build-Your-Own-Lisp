@@ -11,7 +11,8 @@ typedef struct lval {
     LVAL_DECIMAL,
     LVAL_ERR,
     LVAL_SYM,
-    LVAL_SEXPR
+    LVAL_SEXPR,
+    LVAL_QEXPR
   } type;
 
   union {
@@ -32,6 +33,7 @@ lval* lval_integer(int64_t x);
 lval* lval_err(const char* m);
 lval* lval_sym(const char* m);
 lval* lval_sexpr();
+lval* lval_qexpr();
 
 lval* lval_add(lval* v, lval* x);
 void lval_del(lval* v);

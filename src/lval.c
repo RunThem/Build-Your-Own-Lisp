@@ -38,6 +38,15 @@ lval* lval_sexpr() {
   return v;
 }
 
+lval* lval_qexpr() {
+  lval* v  = (lval*)calloc(1, sizeof(lval));
+  v->type  = LVAL_QEXPR;
+  v->count = 0;
+  v->cell  = NULL;
+
+  return v;
+}
+
 lval* lval_err(const char* m) {
   lval* v = (lval*)calloc(1, sizeof(lval));
   v->type = LVAL_ERR;
@@ -67,6 +76,13 @@ void lval_del(lval* v) {
       free(v->sym);
       break;
     case LVAL_SEXPR:
+      for (int i = 0; i < v->count; i++) {
+        lval_del(v->cell[i]);
+      }
+
+      free(v->cell);
+      break;
+    case LVAL_QEXPR:
       for (int i = 0; i < v->count; i++) {
         lval_del(v->cell[i]);
       }
@@ -105,6 +121,9 @@ lval* lval_read(mpc_ast_t* t) {
   }
   if (strstr(t->tag, "sexpr")) {
     x = lval_sexpr();
+  }
+  if (strstr(t->tag, "qexpr")) {
+    x = lval_qexpr();
   }
 
   for (int i = 0; i < t->children_num; i++) {
@@ -148,6 +167,16 @@ void lval_print(lval* v) {
         }
       }
       printf(")");
+      break;
+    case LVAL_QEXPR:
+      printf("{");
+      for (int i = 0; i < v->count; i++) {
+        lval_print(v->cell[i]);
+        if (i != (v->count - 1)) {
+          printf(" ");
+        }
+      }
+      printf("}");
       break;
 
     default:
