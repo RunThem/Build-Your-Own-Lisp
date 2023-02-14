@@ -261,6 +261,23 @@ lval* builtin_join(lval* a) {
   return x;
 }
 
+lval* builtin_cons(lval* a) {
+  lassert(a, a->count == 2, "function 'cons' passed too many arguments!");
+  lassert(a,
+          a->cell[0]->type == LVAL_DECIMAL || a->cell[0]->type == LVAL_INTEGER,
+          "function 'cons' passed incorrect type!");
+  lassert(a, a->cell[1]->type == LVAL_QEXPR, "fcuntion 'cons' passed incorrect type!");
+
+  lval* x = lval_qexpr();
+  lval_add(x, lval_pop(a, 0));
+  lval* y = lval_pop(a, 0);
+
+  lval_add(a, x);
+  lval_add(a, y);
+
+  return builtin_join(a);
+}
+
 lval* builtin_op(lval* a, char* op) {
   for (int i = 0; i < a->count; i++) {
     if (a->cell[i]->type != LVAL_INTEGER && a->cell[i]->type != LVAL_DECIMAL) {
@@ -371,6 +388,8 @@ lval* builtin(lval* a, char* func) {
     return builtin_join(a);
   } else if (strcmp(func, "eval") == 0) {
     return builtin_eval(a);
+  } else if (strcmp(func, "cons") == 0) {
+    return builtin_cons(a);
   } else {
     return builtin_op(a, func);
   }
