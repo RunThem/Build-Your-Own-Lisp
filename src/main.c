@@ -26,19 +26,20 @@ void parser() {
   Lispy  = mpc_new("lispy");
 
   /* Define them with the following Language */
-  mpca_lang(MPCA_LANG_DEFAULT,
-            "number: /-?[0-9]+([.][0-9]+)?/ ;"
-            "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;"
-            "sexpr: '(' <expr>* ')' ;"
-            "qexpr: '{' <expr>* '}' ;"
-            "expr: <number> | <symbol> | <sexpr> | <qexpr> ;"
-            "lispy: /^/ <expr>* /$/ ;",
-            Number,
-            Symbol,
-            Sexpr,
-            Qexpr,
-            Expr,
-            Lispy);
+  mpca_lang(
+      MPCA_LANG_DEFAULT,
+      "number: /-?[0-9]+([.][0-9]+)?/ ;"
+      "symbol: '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" | \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" ;"
+      "sexpr: '(' <expr>* ')' ;"
+      "qexpr: '{' <expr>* '}' ;"
+      "expr: <number> | <symbol> | <sexpr> | <qexpr> ;"
+      "lispy: /^/ <expr>* /$/ ;",
+      Number,
+      Symbol,
+      Sexpr,
+      Qexpr,
+      Expr,
+      Lispy);
 }
 
 void clean() {
