@@ -279,12 +279,23 @@ lval* builtin_cons(lval* a) {
 }
 
 lval* builtin_len(lval* a) {
-  lassert(a, a->count == 1, "function 'cons' passed too many arguments!");
-  lassert(a, a->cell[0]->type == LVAL_QEXPR, "fcuntion 'cons' passed incorrect type!");
+  lassert(a, a->count == 1, "function 'len' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "fcuntion 'len' passed incorrect type!");
 
   lval* x = lval_integer(a->cell[0]->count);
 
   lval_del(a);
+
+  return x;
+}
+
+lval* builtin_init(lval* a) {
+  lassert(a, a->count == 1, "function 'init' passed too many arguments!");
+  lassert(a, a->cell[0]->type == LVAL_QEXPR, "fcuntion 'init' passed incorrect type!");
+  lassert(a, a->cell[0]->count != 0, "fcuntion 'init' passed {}!");
+
+  lval* x = lval_take(a, 0);
+  lval_del(lval_pop(x, x->count - 1));
 
   return x;
 }
@@ -403,6 +414,8 @@ lval* builtin(lval* a, char* func) {
     return builtin_cons(a);
   } else if (strcmp(func, "len") == 0) {
     return builtin_len(a);
+  } else if (strcmp(func, "init") == 0) {
+    return builtin_init(a);
   } else {
     return builtin_op(a, func);
   }
